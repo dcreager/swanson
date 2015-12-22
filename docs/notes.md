@@ -78,6 +78,13 @@ pass that merge continuation into both branches of the `if` (as a free variable
 just like anything else), which in turn means that we have to be able to create
 the continuation (tuple) via "closure" without having to immediately invoke it.
 
+Another interesting point is that the naive encoding of this will make functions
+look like they're written in reverse, since even for simple control flows,
+you'll have to define a "downstream" continuation first so that you can pass it
+in to the "upstream" continuation that will pass control to it.  For S0, this
+might not be an issue (design for the computer not the human).  But for S1 it
+will be.
+
 # Functions and the stack frame
 
 With the CPS system described above, the "return pointer" of a function would be
