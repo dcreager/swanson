@@ -1,3 +1,5 @@
+# Reflection tower
+
 *phases*: swanson's version of compile-time vs runtime in a compiled language,
 or a clearer distinction between the import and run steps (or something like
 that) for an interpreted/scripting language
@@ -27,3 +29,62 @@ clean, but I don't know yet how to describe that better.]
 
 [I'm sure all of this is answered in the literature on reflection towers, so I
 guess I should read that more closely!]
+
+# Linear logic
+
+J Berdine, P O'Hearn, U Reddy, and H Thielecke.  Linear continuation passing.
+
+Great stuff, this will be key.  The variables themselves will follow something
+similar to linear logic, though you won't be limited to a single use; just that
+you're obligated to unreference (or throw away or whatever we call it) every
+variable that you "own" or have responsibility for.  But, to make that work,
+we'll need something like these linear continuation.  Example: you'll transfer
+ownership of one of your variables to a continuation that you've just created.
+But, that means that the continuation MUST be executed at some point, otherwise
+that variable that you were responsible for will leak.  When thinking this
+through this morning, I was confused with how that would work in the presence of
+an `if` statement, where you have a variable that you want to be able to access
+in either of the two branches.  You'd create a continuation for each branch, but
+you wouldn't be able to pass ownership of the variable to both of them.  The
+answer (which comes from linear logic itself, but I found it first in the above
+paper) is the "additive pair", k&m.  That would represent two continuations that
+are linked together.  You can't pass control to a continuation pair, but you can
+project out one of the two continuations.  But the key is that doing that
+"destroys" the element that you didn't project out.  So in the `if` example,
+you'd create a continuation pair for the two branches, and it's the *pair* that
+you pass control of the variable to, not to either of the continuations
+individually.  Inside the implementation of `if`, we'll project out one or the
+other continuation, depending on the value of the predicate, and pass control to
+it.
+
+In S0 itself, we can generalize this to a continuation "tuple", which consists
+of one or more continuations.  A "closure" instruction would let you pass
+control of some of your variables to the tuple.  The tuple would also have some
+free variables that you have to provide values for at invocation time.  An
+"invoke" instruction would let you choose one of the continuations in the tuple.
+Any variables you have left in scope must line up with the free variables in the
+tuple (since you have to deref everything, and the only way to deref some during
+"invoke" is to pass that responsibility on to the continuation that you're
+passing control to).  Those variables that you pass in during "invoke" will get
+merged with the variables that were passed in during "closure".  And then S0
+will pass control to whichever continuation you chose.  All of the other
+continuations, and the tuple itself, are destroyed in the process.
+
+# Functions and the stack frame
+
+With the CPS system described above, the "return pointer" of a function would be
+passed in as a parameter.  You'd have to thread that through all of the
+continuations that define the structure of the function itself, so that the last
+basic block in the function can "return" by passing control to the return
+pointer.  This is similar to the PowerPC calling convention, where the return
+pointer is stored in a register (and the callee has to save it on the stack if
+necessary), and unlike the Intel convention, where the caller stores the return
+pointer on the stack before calling the function.
+
+It seems like an alternative (more in keeping with the Berdine paper) is that a
+function is modeled by a continuation transformer — a function in the semantics
+that takes in a continuation and returns another.  I won't be surprised if I run
+into a problem down the road that makes me switch over to this style, but for
+now I'm going to stick with the explicit "return continuation is another
+parameter" style.  That seems more in line with what we want to do with control
+structures, anyway.
