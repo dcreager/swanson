@@ -70,6 +70,14 @@ merged with the variables that were passed in during "closure".  And then S0
 will pass control to whichever continuation you chose.  All of the other
 continuations, and the tuple itself, are destroyed in the process.
 
+Next I wondered whether "closure" and "invoke" needed to be separate
+instructions, or could you combine them together into one.  But I think we do
+want them separate.  Back to the `if` example, both branches will need to "meet"
+back together with another merge continuation.  For that to work we'll have to
+pass that merge continuation into both branches of the `if` (as a free variable
+just like anything else), which in turn means that we have to be able to create
+the continuation (tuple) via "closure" without having to immediately invoke it.
+
 # Functions and the stack frame
 
 With the CPS system described above, the "return pointer" of a function would be
