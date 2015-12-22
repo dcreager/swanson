@@ -88,3 +88,10 @@ into a problem down the road that makes me switch over to this style, but for
 now I'm going to stick with the explicit "return continuation is another
 parameter" style.  That seems more in line with what we want to do with control
 structures, anyway.
+
+# YAML
+
+In the spirit of supporting lots of different hosts easily, the file format for
+almost everything will be YAML, with well-defined schemas that have to be
+followed.  We can throw some simple compression on top of that, and we should
+have something that's easy to read in just about any host language.
