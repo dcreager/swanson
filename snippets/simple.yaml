@@ -1,0 +1,84 @@
+%YAML 1.2
+%TAG !s0! tag:swanson-lang.org,2015:s0/
+
+--- !s0!module
+# int sqr(int x) {
+#   return x * x;
+# }
+
+- &entry !s0!step
+  inputs:
+    - name: x
+      type: ~
+  operation:
+    !s0!close
+    step: *s1
+    destination: next
+
+    source: x
+    operation-name: 'dup'
+    parameters:
+      - !s0!local
+        source: x
+        target: self
+      - !s0!continuation
+        destination: *s1
+        target: return
+        rename:
+          - from: out1
+            to: x1
+          - from: out2
+            to: x2
+
+- &entry !s0!step
+  inputs:
+    - name: x
+      type: ~
+  operation:
+    !s0!call
+    source: x
+    operation-name: 'dup'
+    parameters:
+      - !s0!local
+        source: x
+        target: self
+      - !s0!continuation
+        destination: *s1
+        target: return
+        rename:
+          - from: out1
+            to: x1
+          - from: out2
+            to: x2
+
+- &s1 !s0!step
+  inputs:
+    - name: x1
+      type: ~
+    - name: x2
+      type: ~
+  operation:
+    !s0!call
+    source: x1
+    operation-name: '*'
+    parameters:
+      - !s0!parameter
+        source: x1
+        target: lhs
+      - !s0!parameter
+        source: x1
+        target: rhs
+      - !s0!parameter
+
+  operation:
+    !s0!call
+    source: x
+    operation-name: '*'
+    parameters:
+      - !s0!parameter
+        source: x
+        target: lhs
+      - !s0!parameter
+        source: x
+        target: rhs
+      - !s0!parameter
