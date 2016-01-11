@@ -23,6 +23,9 @@ setup(
     author='Swanson Project',
     url='http://www.swanson-lang.org/',
     packages=find_packages(exclude=['tests']),
-    install_requires=[],
+    install_requires=[
+        'attrs>=15.2.0',
+        'six>=1.10.0',
+    ],
     license='Apache',
 )
