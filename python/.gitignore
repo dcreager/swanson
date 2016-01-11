@@ -1,0 +1,12 @@
+# Compiled code
+*.py[cod]
+
+# Packaging
+*.egg-info
+
+# Testing / coverage
+.cache
+.coverage
+.tox
+htmlcov
+junit-*.xml
