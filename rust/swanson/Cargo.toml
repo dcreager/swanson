@@ -1,0 +1,6 @@
+[package]
+name = "swanson"
+version = "0.1.0"
+authors = ["Swanson Project"]
+
+[dependencies]
