@@ -1,0 +1,6 @@
+#!/bin/sh
+
+SCRIPT_DIR=$(dirname "$0")
+SCRIPT_NAME=$(basename "$0")
+LD_LIBRARY_PATH="$SCRIPT_DIR:$LD_LIBRARY_PATH" \
+    exec "$SCRIPT_DIR"/wrapped/"$SCRIPT_NAME" "$@"

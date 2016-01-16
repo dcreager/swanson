@@ -5,6 +5,7 @@
 .PHONY: clean depends distclean libswanson swanson
 all: depends libswanson swanson
 
+INSTALL ?= install
 LN ?= ln
 SED ?= sed
 ifeq ($(origin VALGRIND), undefined)
@@ -113,7 +114,7 @@ INCLUDE_CPPFLAGS ?= -I$(SOURCE_ROOT)/include -I$(SOURCE_ROOT)
 
 # A pattern rule for compiling .c files into .o files.
 $(BUILD_ROOT)/objs/%.o: $(SOURCE_ROOT)/%.c $(BUILD)
-	@echo "CC   $(patsubst $(SOURCE_ROOT)/%, %, $<)"
+	@echo "CC    $(patsubst $(SOURCE_ROOT)/%, %, $<)"
 	@mkdir -p $(dir $@)
 	@$(CC) -c \
 	    $(CFLAGS) \
@@ -150,7 +151,7 @@ LIBSWANSON_VERSION_LDFLAGS = -soname libswanson.so.$(LIBSWANSON_SOVERSION)
 
 libswanson: $(LIBSWANSON_SO) $(LIBSWANSON_SO_X) $(LIBSWANSON_SO_XYZ)
 $(LIBSWANSON_SO): $(LIBSWANSON_O) $(BUILD)
-	@echo "LD   $(patsubst $(BUILD_ROOT)/%, %, $@)"
+	@echo "LD    $(patsubst $(BUILD_ROOT)/%, %, $@)"
 	@$(LD) \
 	    $(SHARED_LDFLAGS) \
 	    $(LIBSWANSON_VERSION_LDFLAGS) \
@@ -158,17 +159,22 @@ $(LIBSWANSON_SO): $(LIBSWANSON_O) $(BUILD)
 $(LIBSWANSON_SO_X): $(LIBSWANSON_SO)
 	@$(LN) -sf $(notdir $<) $@
 
-SWANSON_EXE = $(BUILD_ROOT)/swanson
+SWANSON_EXE = $(BUILD_ROOT)/wrapped/swanson
+SWANSON_WRAPPER = $(BUILD_ROOT)/swanson
 
-swanson: $(SWANSON_EXE)
+swanson: $(SWANSON_EXE) $(SWANSON_WRAPPER)
 $(SWANSON_EXE): $(SWANSON_O) $(LIBSWANSON_SO) $(BUILD)
-	@echo "LD   $(patsubst $(BUILD_ROOT)/%, %, $@)"
+	@echo "LD    $(patsubst $(BUILD_ROOT)/wrapped/%, %, $@)"
+	@mkdir -p $(dir $@)
 	@$(CC) \
 	    $(CFLAGS) \
 	    $(INCLUDE_LDFLAGS) \
 	    -o $@ $(filter %.o, $^) \
 	    -Wl,-rpath,$(BUILD_ROOT) \
 	    -lswanson
+$(SWANSON_WRAPPER): $(SOURCE_ROOT)/rpath-wrapper $(SWANSON_EXE) $(BUILD)
+	@echo "RPATH $(patsubst $(BUILD_ROOT)/%, %, $@)"
+	@$(INSTALL) -m 0755 $< $@
 
 #------------------------------------------------------------------------------
 # Tests
@@ -210,6 +216,7 @@ clean:
 	@rm -f $(SWANSON_D)
 	@rm -f $(SWANSON_O)
 	@rm -f $(SWANSON_EXE)
+	@rm -f $(SWANSON_WRAPPER)
 	@rm -f $(TEST_SWANSON_D)
 	@rm -f $(TEST_SWANSON_O)
 	@rm -f $(TEST_SWANSON_EXE)
