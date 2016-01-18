@@ -2,7 +2,7 @@
 # Copyright © 2016, Swanson Project.
 # Please see the COPYING file in this distribution for license details.
 
-.PHONY: clean depends distclean libswanson swanson
+.PHONY: clean depends distclean install libswanson swanson test-swanson check
 all: depends libswanson swanson
 
 INSTALL ?= install
@@ -114,7 +114,7 @@ INCLUDE_CPPFLAGS ?= -I$(SOURCE_ROOT)/include -I$(SOURCE_ROOT)
 
 # A pattern rule for compiling .c files into .o files.
 $(BUILD_ROOT)/objs/%.o: $(SOURCE_ROOT)/%.c $(BUILD)
-	@echo "CC    $(patsubst $(SOURCE_ROOT)/%, %, $<)"
+	@echo "CC       $(patsubst $(SOURCE_ROOT)/%, %, $<)"
 	@mkdir -p $(dir $@)
 	@$(CC) -c \
 	    $(CFLAGS) \
@@ -127,7 +127,7 @@ $(BUILD_ROOT)/objs/%.o: $(SOURCE_ROOT)/%.c $(BUILD)
 # Dependency post-processing
 
 depends: $(LIBSWANSON_O) $(SWANSON_O) $(TEST_SWANSON_O)
-	@echo "DEPS  Makefile.deps"
+	@echo "DEPS      Makefile.deps"
 	@$(SED) \
 	    -e 's+'"$(BUILD_ROOT)"'+$$(BUILD_ROOT)+g' \
 	    -e 's+'"$(SOURCE_ROOT)"'+$$(SOURCE_ROOT)+g' \
@@ -151,7 +151,7 @@ LIBSWANSON_VERSION_LDFLAGS = -soname libswanson.so.$(LIBSWANSON_SOVERSION)
 
 libswanson: $(LIBSWANSON_SO) $(LIBSWANSON_SO_X) $(LIBSWANSON_SO_XYZ)
 $(LIBSWANSON_SO): $(LIBSWANSON_O) $(BUILD)
-	@echo "LD    $(patsubst $(BUILD_ROOT)/%, %, $@)"
+	@echo "LD       $(patsubst $(BUILD_ROOT)/%, %, $@)"
 	@$(LD) \
 	    $(SHARED_LDFLAGS) \
 	    $(LIBSWANSON_VERSION_LDFLAGS) \
@@ -164,7 +164,7 @@ SWANSON_WRAPPER = $(BUILD_ROOT)/swanson
 
 swanson: $(SWANSON_EXE) $(SWANSON_WRAPPER)
 $(SWANSON_EXE): $(SWANSON_O) $(LIBSWANSON_SO) $(BUILD)
-	@echo "LD    $(patsubst $(BUILD_ROOT)/wrapped/%, %, $@)"
+	@echo "LD       $(patsubst $(BUILD_ROOT)/wrapped/%, %, $@)"
 	@mkdir -p $(dir $@)
 	@$(CC) \
 	    $(CFLAGS) \
@@ -173,7 +173,7 @@ $(SWANSON_EXE): $(SWANSON_O) $(LIBSWANSON_SO) $(BUILD)
 	    -Wl,-rpath,$(BUILD_ROOT) \
 	    -lswanson
 $(SWANSON_WRAPPER): $(SOURCE_ROOT)/rpath-wrapper $(SWANSON_EXE) $(BUILD)
-	@echo "RPATH $(patsubst $(BUILD_ROOT)/%, %, $@)"
+	@echo "RPATH    $(patsubst $(BUILD_ROOT)/%, %, $@)"
 	@$(INSTALL) -m 0755 $< $@
 
 #------------------------------------------------------------------------------
@@ -183,7 +183,7 @@ TEST_SWANSON_EXE = $(BUILD_ROOT)/test-swanson
 
 test-swanson: $(TEST_SWANSON_EXE) $(TEST_SWANSON_WRAPPER)
 $(TEST_SWANSON_EXE): $(TEST_SWANSON_O) $(LIBSWANSON_SO_X) $(BUILD)
-	@echo "LD   $(patsubst $(BUILD_ROOT)/%, %, $@)"
+	@echo "LD       $(patsubst $(BUILD_ROOT)/%, %, $@)"
 	@mkdir -p $(dir $@)
 	@$(CC) \
 	    $(CFLAGS) \
@@ -204,6 +204,51 @@ else
 	@echo "TEST"
 	@$(TEST_SWANSON_EXE)
 endif
+
+#------------------------------------------------------------------------------
+# Install
+
+# Installation locations
+DESTDIR ?=
+PREFIX = /usr
+BINDIR = $(PREFIX)/bin
+INCLUDEDIR = $(PREFIX)/include
+LIBDIR = $(PREFIX)/lib
+
+INSTALLED_H = $(LIBSWANSON_H:$(SOURCE_ROOT)/include/%=$(DESTDIR)$(INCLUDEDIR)/%)
+$(INSTALLED_H): $(DESTDIR)$(INCLUDEDIR)/%: $(SOURCE_ROOT)/include/%
+	@echo "INSTALL  $(patsubst $(DESTDIR)%, %, $@)"
+	@$(INSTALL) -d -m 0755 $(dir $@)
+	@$(INSTALL) -m 0644 $< $@
+
+INSTALLED_LIBSWANSON_SO = $(DESTDIR)$(LIBDIR)/libswanson.so
+INSTALLED_LIBSWANSON_SO_X = $(DESTDIR)$(LIBDIR)/libswanson.so.$(LIBSWANSON_SOVERSION)
+INSTALLED_LIBSWANSON_SO_XYZ = $(DESTDIR)$(LIBDIR)/libswanson.so.$(LIBSWANSON_VERSION)
+INSTALLED_LIBSWANSON = \
+    $(INSTALLED_LIBSWANSON_SO) \
+    $(INSTALLED_LIBSWANSON_SO_X) \
+    $(INSTALLED_LIBSWANSON_SO_XYZ)
+
+$(INSTALLED_LIBSWANSON_SO_XYZ): $(LIBSWANSON_SO)
+	@echo "INSTALL  $(patsubst $(DESTDIR)%, %, $@)"
+	@$(INSTALL) -d -m 0755 $(dir $@)
+	@$(INSTALL) -m 0755 $< $@
+$(INSTALLED_LIBSWANSON_SO_X): $(INSTALLED_LIBSWANSON_SO_XYZ)
+	@echo "INSTALL  $(patsubst $(DESTDIR)%, %, $@)"
+	@$(INSTALL) -d -m 0755 $(dir $@)
+	@$(LN) -sf $(notdir $<) $@
+$(INSTALLED_LIBSWANSON_SO): $(INSTALLED_LIBSWANSON_SO_XYZ)
+	@echo "INSTALL  $(patsubst $(DESTDIR)%, %, $@)"
+	@$(INSTALL) -d -m 0755 $(dir $@)
+	@$(LN) -sf $(notdir $<) $@
+
+INSTALLED_SWANSON_EXE = $(DESTDIR)$(BINDIR)/swanson
+$(INSTALLED_SWANSON_EXE): $(SWANSON_EXE)
+	@echo "INSTALL  $(patsubst $(DESTDIR)%, %, $@)"
+	@$(INSTALL) -d -m 0755 $(dir $@)
+	@$(INSTALL) -m 0755 $< $@
+
+install: $(INSTALLED_H) $(INSTALLED_LIBSWANSON) $(INSTALLED_SWANSON_EXE)
 
 #------------------------------------------------------------------------------
 # Cleaning up
